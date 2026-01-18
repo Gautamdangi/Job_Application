@@ -13,10 +13,9 @@ import java.time.LocalDate;
 public class UpdateJobDTO {
 
     // only fields that are allowed to change/update
-    private Long id;
     private String jobTitle;
-    private String status;
-    private String notes;
-    private LocalDate appliedDate;
+    private String salaryRange;
+    private LocalDate deadline;
+    private Boolean isActive;
 
 }

@@ -4,30 +4,68 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name ="Job_applications")
+@EntityListeners(AuditingEntityListener.class)
+@Table(name ="Jobs")
 public class Jobs {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
    private  String company;
     private String jobTitle;
     private  String Link;
-    private LocalDate appliedDate;
+    private String location;
 
-    @Enumerated(EnumType.STRING)
-    private Status status;
+
+//    @Enumerated(EnumType.STRING)
+//    private Status status;
 
     private String notes;
 
+    @Column(nullable = false)
+    private Boolean isActive = true;
+
+    @CreatedDate
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    private LocalDateTime updatedAt;
+
+//    deadline to apply
+    private LocalDateTime deadline;
+
+    private String salaryRange;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name ="recruiter_id",nullable = false)
+    private User recruiter;
+
+    @OneToMany(mappedBy = "jobs", cascade = CascadeType.ALL)
+    private List<JobApplication> applications = new ArrayList<>();
+
+
+
+
+
+
+
     //connect to user
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+//    @ManyToOne
+//    @JoinColumn(name = "user_id")
+//    private User user;
 }
