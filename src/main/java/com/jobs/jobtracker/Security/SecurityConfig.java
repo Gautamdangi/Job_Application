@@ -1,0 +1,99 @@
+package com.jobs.jobtracker.Security;
+
+import com.jobs.jobtracker.Service.UserDetailServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+
+
+    @Autowired  JWTFilter JWTFilter;
+
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+
+        return new BCryptPasswordEncoder();
+    }
+
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+        http
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session ->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/auth/**","/hello").permitAll()
+                .requestMatchers("/jobs/**").authenticated()
+                .anyRequest().authenticated())
+                        .addFilterBefore(JWTFilter,
+                                UsernamePasswordAuthenticationFilter.class);
+
+//.formLogin(form -> form.disable())
+
+//.httpBasic(Customizer.withDefaults()
+
+
+
+//        auth -> auth
+//                .requestMatchers("/api/auth/**").permitAll()
+        return http.build();
+    }
+// customizing own auth provider
+//@Bean
+//    public AuthenticationProvider authenticationProvider() {
+//
+//
+//    DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+//    provider.setPasswordEncoder(passwordEncoder());
+//    provider.setUserDetailServiceImpl(UserDetailsServiceImpl);
+//
+//    return provider;
+//}
+
+
+    @Bean
+    public AuthenticationManager authenticationManager(
+            AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
+
+// AuthenticationManager ->AuthenticationManager acts as a coordinator that delegates authentication requests to
+// one or more AuthenticationProviders and returns the final result.
+    // spring do it auto
+//              Login request
+//                   !
+//           AuthenticationManager.authenticate()
+//                   !
+//           AuthenticationProvider.authenticate() ->AuthenticationProvider performs the actual authentication by validating credentials
+//                   !
+//           PasswordEncoder.matches()
+//                   !
+//        Authenticated token returned
+
+
+//
+//    @Bean
+//    public UserDetailsService userDetailsService() {
+//        return new InMemoryUserDetailsManager();
+//    }
+}
