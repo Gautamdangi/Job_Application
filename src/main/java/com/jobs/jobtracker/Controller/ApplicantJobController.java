@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/applicant/jobs")
 @RequiredArgsConstructor
 public class ApplicantJobController {
-    private JobServiceImplement jobServiceImplement;
+    private final JobServiceImplement jobServiceImplement;
 
     @GetMapping
     public ResponseEntity<PageResponse<JobResponseDTO>> getAllJobs(
@@ -26,7 +26,7 @@ public class ApplicantJobController {
         Sort sort = sortDir.equalsIgnoreCase("ASC") ? Sort.by(sortBy).ascending() : Sort.by(sortBy).descending();
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Page<JobResponseDTO> jobs = jobServiceImplement.getAllActiveJobs(pageable);
+        Page<JobResponseDTO> jobs = jobServiceImplement.getAllActiveJob(pageable);
 
         return ResponseEntity.ok(new PageResponse<>(
                 jobs.getContent(),
@@ -39,29 +39,29 @@ public class ApplicantJobController {
 
     }
 
-    @GetMapping("/search")
-    public ResponseEntity<PageResponse<JobResponseDTO>> searchJobs(
-            @RequestParam String keyword,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<JobResponseDTO> jobs = jobServiceImplement.searchJobs(keyword, pageable);
-
-        return ResponseEntity.ok(new PageResponse<>(
-                jobs.getContent(),
-                jobs.getNumber(),
-                jobs.getSize(),
-                jobs.getTotalElements(),
-                jobs.getTotalPages(),
-                jobs.isLast()
-        ));
-    }
+//    @GetMapping("/search")
+//    public ResponseEntity<PageResponse<JobResponseDTO>> searchJobs(
+//            @RequestParam String keyword,
+//            @RequestParam(defaultValue = "0") int page,
+//            @RequestParam(defaultValue = "10") int size
+//    ) {
+//        Pageable pageable = PageRequest.of(page, size);
+//        Page<JobResponseDTO> jobs = jobServiceImplement.searchJobs(keyword, pageable);
+//
+//        return ResponseEntity.ok(new PageResponse<>(
+//                jobs.getContent(),
+//                jobs.getNumber(),
+//                jobs.getSize(),
+//                jobs.getTotalElements(),
+//                jobs.getTotalPages(),
+//                jobs.isLast()
+//        ));
+//    }
 
     @GetMapping("/{jobId}")
     public ResponseEntity<JobResponseDTO> getJobById(@PathVariable Long jobId) {
         JobResponseDTO job = jobServiceImplement.getJobById(jobId);
 
-        return ResponseEntity.ok(new JobResponseDTO());
+        return ResponseEntity.ok(job);
     }
 }

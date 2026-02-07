@@ -18,7 +18,7 @@ boolean existsByUserName(String userName);
     Optional<User> findByUserName(String userName);
 
 
-    Optional<Object> findByUserEmail(String userEmail);
+    Optional<User> findByUserEmail(String userEmail);
 
     List<User> findByRole(Role role);
 

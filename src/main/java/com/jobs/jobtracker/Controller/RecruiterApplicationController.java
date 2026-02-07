@@ -19,7 +19,7 @@ import java.awt.print.Pageable;
 @RequestMapping("/api/recruiter/applications")
 @RequiredArgsConstructor
 public class RecruiterApplicationController {
-    private ApplicationService applicationService;
+    private final ApplicationService applicationService;
 
     @GetMapping
     public ResponseEntity<PageResponse<ApplicationResponse>> getAllApplication(
@@ -41,7 +41,7 @@ public class RecruiterApplicationController {
 
     }
 
-    @GetMapping("/job/{jobId")
+    @GetMapping("/job/{jobId}")
     public ResponseEntity<PageResponse<ApplicationResponse>> getJobApplication(
             @PathVariable Long jobId,
             @AuthenticationPrincipal User recruiter,
@@ -69,7 +69,7 @@ public class RecruiterApplicationController {
             @AuthenticationPrincipal User recruiter
             ){
         ApplicationResponse application = applicationService.updateApplication(applicationId, update, recruiter);
-        return ResponseEntity.ok(new ApplicationResponse());
+        return ResponseEntity.ok(application);
     }
 
     @GetMapping("/{applicationId}")
@@ -78,6 +78,6 @@ public class RecruiterApplicationController {
             @AuthenticationPrincipal User recruiter
     ){
         ApplicationResponse application = applicationService.getApplicationById(applicationId, recruiter);
-        return ResponseEntity.ok(new ApplicationResponse());
+        return ResponseEntity.ok(application);
     }
 }

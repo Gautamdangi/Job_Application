@@ -22,9 +22,9 @@ import java.awt.print.Pageable;
 
 
 public class ApplicantApplicationController {
-    private ApplicationService applicationService;
+    private final ApplicationService applicationService;
 
-    @PostMapping
+    @PostMapping("/apply")
     public ResponseEntity<ApplicationResponse> applyForJob(
             @RequestParam Long jobId,
             @RequestParam String coverLetter,
@@ -32,7 +32,7 @@ public class ApplicantApplicationController {
             @AuthenticationPrincipal User applicant
             ){
         ApplicationResponse application = applicationService.applyForJob(jobId, coverLetter, resume, applicant);
-        return ResponseEntity.ok(new ApplicationResponse());
+        return ResponseEntity.ok(application);
     }
 
     @GetMapping("/{applicationId}")
@@ -41,7 +41,7 @@ public class ApplicantApplicationController {
             @AuthenticationPrincipal User applicant
     ){
         ApplicationResponse application = applicationService.getApplicationById(applicationId, applicant);
-        return ResponseEntity.ok(new ApplicationResponse());
+        return ResponseEntity.ok(application);
     }
 
     @GetMapping

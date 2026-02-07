@@ -1,4 +1,5 @@
 package com.jobs.jobtracker.Service;
+import ch.qos.logback.classic.spi.IThrowableProxy;
 import com.jobs.jobtracker.DTO.LoginResponse;
 import com.jobs.jobtracker.DTO.SignUpResponse;
 import com.jobs.jobtracker.DTO.LoginRequest;
@@ -7,12 +8,16 @@ import com.jobs.jobtracker.Model.Role;
 import com.jobs.jobtracker.Model.User;
 import com.jobs.jobtracker.Repository.UserRepository;
 import com.jobs.jobtracker.Security.JWTUtil;
+import com.jobs.jobtracker.exceptions.AccountInactiveException;
 import com.jobs.jobtracker.exceptions.EmailException;
+import com.jobs.jobtracker.exceptions.InvalidCredentialsException;
+import com.jobs.jobtracker.exceptions.UserAlreadyExistsException;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
+@Slf4j
 @Service
 @Transactional
 public class UserServiceImplement implements UserService {
@@ -24,19 +29,19 @@ public class UserServiceImplement implements UserService {
   @Override
   public LoginResponse loginUser(LoginRequest login) {
         User user = userRepo.findByUserName(login.getUserName())
-                .orElseThrow(()->new RuntimeException("Invalid userEmail or User not found"));
+                .orElseThrow(()->new InvalidCredentialsException("Invalid userEmail or User not found"));
 
         boolean isValid = passwordEncoder.matches(login.getPassword(), // password given by user during login
                 user.getPassword()); // encoded password from DB
 
       if(!user.getIsActive()){
-          throw new RuntimeException("Account is inactive");
+          throw new AccountInactiveException("Account is inactive");
       }
         if (!isValid) {
-            throw new RuntimeException("Invalid username or password");
+            throw new InvalidCredentialsException("Invalid username or password");
         }
 // login successfully
-
+      log.info("User logged in successfully ", login.getUserName());
 
         String token = jwtUtil.generateToken(user.getUserName(), user.getRole().name());
 
@@ -56,7 +61,7 @@ public class UserServiceImplement implements UserService {
 
         //Checking if user is already present in db
         if (userRepo.findByUserEmail(signUp.getUserEmail()).isPresent()) {
-            throw new EmailException("Email already registered");
+           throw  new UserAlreadyExistsException("Email already registered " + signUp.getUserEmail());
         }
         User user = new User();
         user.setUserName(signUp.getUserName());
@@ -73,7 +78,7 @@ public class UserServiceImplement implements UserService {
 
 
         String token = jwtUtil.generateToken(user.getUserName(), user.getRole().name());
-
+        log.info("User Signed up successfully", signUp.getUserEmail());
         return new SignUpResponse (
                 savedUser.getId(),
                 savedUser.getUserName(),
@@ -84,6 +89,9 @@ public class UserServiceImplement implements UserService {
 
 
         );
+
+
+
 
     }
 }
