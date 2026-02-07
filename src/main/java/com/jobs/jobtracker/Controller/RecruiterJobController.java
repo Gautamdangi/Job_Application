@@ -4,6 +4,7 @@ import com.jobs.jobtracker.DTO.CreateJobDTO;
 import com.jobs.jobtracker.DTO.JobResponseDTO;
 import com.jobs.jobtracker.DTO.PageResponse;
 import com.jobs.jobtracker.DTO.UpdateJobDTO;
+
 import com.jobs.jobtracker.Model.User;
 import com.jobs.jobtracker.Service.JobServiceImplement;
 import jakarta.validation.Valid;
@@ -14,6 +15,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,18 +25,20 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 
 public class RecruiterJobController {
-    private JobServiceImplement jobServiceImplement;
+    private final JobServiceImplement jobServiceImplement;
 
     @PostMapping
+    @PreAuthorize("hasRole('Recruiter')")
     public ResponseEntity<JobResponseDTO> create(
 
            @Valid @RequestBody CreateJobDTO createJobDTO,
             @AuthenticationPrincipal User recruiter
             ){
+       // String recruiterUserName = authentication.getName();
 
-        JobResponseDTO job = jobServiceImplement.create(createJobDTO,recruiter);
+        JobResponseDTO job = jobServiceImplement.create(createJobDTO, recruiter);
        return ResponseEntity.status(HttpStatus.CREATED)
-               .body(new JobResponseDTO() );
+               .body(job );
 
     }
 
@@ -45,7 +50,7 @@ public class RecruiterJobController {
             )
     {
         JobResponseDTO job = jobServiceImplement.update(jobId,updateJobDTO,recruiter);
-        return  ResponseEntity.ok(new JobResponseDTO());
+        return  ResponseEntity.ok(job);
     }
 
     @DeleteMapping("/jobid")
@@ -66,7 +71,7 @@ public class RecruiterJobController {
             @RequestParam(defaultValue = "10") int size
     ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<JobResponseDTO> jobs = jobServiceImplement.getJobsByRecruiter(recruiter.getId(), pageable);
+        Page<JobResponseDTO> jobs = jobServiceImplement.getJobByRecruiter_Id(recruiter.getId(), pageable);
 
         return ResponseEntity.ok(new PageResponse<>(
                 jobs.getContent(),
@@ -82,7 +87,7 @@ public class RecruiterJobController {
 @GetMapping("/{jobId}/getjobs")
 public ResponseEntity<JobResponseDTO> getJob(@PathVariable Long jobId) {
     JobResponseDTO job = jobServiceImplement.getJobById(jobId);
-    return ResponseEntity.ok(new JobResponseDTO());
+    return ResponseEntity.ok(job);
 }
 
 }

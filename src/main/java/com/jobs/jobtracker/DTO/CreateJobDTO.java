@@ -14,7 +14,9 @@ public class CreateJobDTO {
     @NonNull
     private String company;
     private String jobTitle;
-    private String Link;
+    private String applyLink;
+    private  String location;
+    private String salaryRange;
 
 
 

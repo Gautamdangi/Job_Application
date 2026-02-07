@@ -7,16 +7,29 @@ import com.jobs.jobtracker.Model.Role;
 import com.jobs.jobtracker.Model.Status;
 import com.jobs.jobtracker.Model.User;
 import com.jobs.jobtracker.Repository.ApplicationRepository;
-import com.jobs.jobtracker.Repository.JobsRepository;
+import com.jobs.jobtracker.Repository.JobRepository;
+import com.jobs.jobtracker.exceptions.AlreadyJobAppliedException;
+import com.jobs.jobtracker.exceptions.JobNotFoundException;
+import com.jobs.jobtracker.exceptions.ResourceNotFoundException;
+import com.jobs.jobtracker.exceptions.UnauthorizedException;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+@Service
+@Slf4j
 public class ApplicationService {
+    @Autowired
     private ApplicationRepository applicationRepository;
-    private JobsRepository jobsRepository;
+   @Autowired
+   private JobRepository jobRepository;
+   @Autowired
     private FileStorageService fileStorageService;
+   @Autowired
     private EmailService emailService;
 
     //apply for job
@@ -24,21 +37,19 @@ public class ApplicationService {
     public ApplicationResponse applyForJob(Long jobId, String coverLetter, MultipartFile resume, User applicant) {
 
         //check job
-        var jobs = jobsRepository.findById(jobId).orElseThrow(
+        var job = jobRepository.findById(jobId).orElseThrow(
                 () ->
-                        new RuntimeException(STR."JobId not found: \{jobId}"));
-
-        // add letter exception time
+                        new ResourceNotFoundException(STR."JobId not found: \{jobId}"));
 
 
         //status of job
-        if (!jobs.getIsActive()) {
-            throw new RuntimeException("This job is no longer  accepting responses");
+        if (!job.getIsActive()) {
+            throw new JobNotFoundException("This job is no longer  accepting responses");
         }
 
         // already applied by applicant
-        if (applicationRepository.existsByApplicantIdAndJobsId(applicant.getId(), jobs.getId())) {
-            throw new RuntimeException("you have already applied for this job");
+        if (applicationRepository.existsByApplicantIdAndJobId(applicant.getId(), job.getId())) {
+            throw new AlreadyJobAppliedException("You have already applied for this job");
         }
 //save resume or in storage given by user
         String resumePath = fileStorageService.storeFile(resume, applicant.getId());
@@ -46,7 +57,7 @@ public class ApplicationService {
 
         var application = JobApplication.builder()
                 .applicant(applicant)
-                .jobs(jobs)
+                .job(job)
                 .resumePath(resumePath)
                 .status(Status.Applied)
                 .coverLetter(coverLetter)
@@ -55,14 +66,16 @@ public class ApplicationService {
         //save to db
         application = applicationRepository.save(application);
 
+        log.info("Application submitted" ,applicant.getUserEmail(),jobId);
+
         //send confirmation mail
-        emailService.sendApplicationConfirmation(applicant.getUserEmail(), applicant.getUserName(), jobs.getJobTitle());
+        emailService.sendApplicationConfirmation(applicant.getUserEmail(), applicant.getUserName(), job.getJobTitle());
 
         return new ApplicationResponse(
                 application.getId(),
-                application.getJobs().getId(),
-                application.getJobs().getJobTitle(),
-                application.getJobs().getCompany(),
+                application.getJob().getId(),
+                application.getJob().getJobTitle(),
+                application.getJob().getCompany(),
                 application.getApplicant().getUserName(),
                 application.getApplicant().getUserEmail(),
                 application.getResumePath(),
@@ -78,33 +91,40 @@ public class ApplicationService {
 
 
 //update application
+    @Transactional
     public ApplicationResponse updateApplication(Long  applicantId, ApplicationUpdate update, User recruiter){
         var application = applicationRepository.findById(applicantId).orElseThrow(()-> new RuntimeException("Application not found"));
 
                 //auth check who can update this application
-        if (!application.getJobs().getRecruiter().getId().equals(recruiter.getId())) {
+        if (!application.getJob().getRecruiter().getId().equals(recruiter.getId())) {
             throw new RuntimeException("you are not authorize to update tns application");
         }
         application.setStatus(update.getStatus());
         if(update.getRecruiterNotes() != null){
+            application.setRecruiterNotes(update.getRecruiterNotes());
+
+        }
+        if (update.getInterviewDate() != null) {
+
             application.setInterviewDate(update.getInterviewDate());
         }
 
         application = applicationRepository.save(application);
+        log.info("Application updated",applicantId,update.getStatus());
 
         // Send status update email
         emailService.sendStatusUpdateEmail(
                 application.getApplicant().getUserEmail(),
                 application.getApplicant().getUserName(),
-                application.getJobs().getJobTitle(),
+                application.getJob().getJobTitle(),
                 update.getStatus().name()
         );
 
         return new ApplicationResponse(
                 application.getId(),
-                application.getJobs().getId(),
-                application.getJobs().getJobTitle(),
-                application.getJobs().getCompany(),
+                application.getJob().getId(),
+                application.getJob().getJobTitle(),
+                application.getJob().getCompany(),
                 application.getApplicant().getUserName(),
                 application.getApplicant().getUserEmail(),
                 application.getResumePath(),
@@ -120,26 +140,26 @@ public class ApplicationService {
     // get application by users recruiter and applicant
     public ApplicationResponse getApplicationById(Long applicationId, User user) {
         var application = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new RuntimeException("Application not found with id: " + applicationId));
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + applicationId));
 
         boolean isApplicant = application.getApplicant().getId().equals(user.getId());
-        boolean isRecruiter = application.getJobs().getRecruiter().getId().equals(user.getId());
+        boolean isRecruiter = application.getJob().getRecruiter().getId().equals(user.getId());
         boolean isAdmin = user.getRole() ==
                 Role.Admin;
 
         if (!isApplicant && !isRecruiter && !isAdmin) {
-            throw new RuntimeException("You are not authorized to view this application");
+            throw new UnauthorizedException("You are not authorized to view this application");
         }
 
-        return ApplicationResponse(application);
+        return mapToApplicationResponse(application);
     }
 
-    private ApplicationResponse ApplicationResponse(JobApplication application) {
+    private ApplicationResponse mapToApplicationResponse(JobApplication application) {
         return new ApplicationResponse(
                 application.getId(),
-                application.getJobs().getId(),
-                application.getJobs().getJobTitle(),
-                application.getJobs().getCompany(),
+                application.getJob().getId(),
+                application.getJob().getJobTitle(),
+                application.getJob().getCompany(),
                 application.getApplicant().getUserName(),
                 application.getApplicant().getUserEmail(),
                 application.getResumePath(),
@@ -156,26 +176,26 @@ public class ApplicationService {
     //get applications submitted by user By recruiter
     public Page<ApplicationResponse> getApplicantApplications(User applicant, Pageable pageable){
         return applicationRepository.findByApplicantId(applicant.getId(), pageable)
-                .map(this::ApplicationResponse);
+                .map(this::mapToApplicationResponse);
     }
 
 
-    public Page<ApplicationResponse> getJobApplications(Long jobsId, User recruiter, Pageable pageable){
-        var job = jobsRepository.findById(jobsId)
-                .orElseThrow(()-> new RuntimeException("Job not found"));
+    public Page<ApplicationResponse> getJobApplications(Long jobId, User recruiter, Pageable pageable){
+        var job = jobRepository.findById(jobId)
+                .orElseThrow(()-> new ResourceNotFoundException("Job not found"));
 
         if(!job.getRecruiter().getId().equals(recruiter.getId())){
-            throw new RuntimeException("You are not authorize to view this application");
+            throw new UnauthorizedException("You are not authorize to view this application");
         }
-        return applicationRepository.findByJobsId(jobsId,pageable)
-                .map(this::ApplicationResponse);
+        return applicationRepository.findByJobId(jobId, pageable)
+                .map(this::mapToApplicationResponse);
     }
 
 
 
     public Page<ApplicationResponse>getRecruiterApplications(User recruiter, Pageable pageable){
-        return applicationRepository.findByRecruiterId(recruiter.getId(), pageable)
-                .map((this:: ApplicationResponse));
+        return applicationRepository.findByRecruiter_Id(recruiter.getId(), pageable)
+                .map((this:: mapToApplicationResponse));
 
     }
 }

@@ -6,6 +6,7 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 
 import javax.crypto.KeyGenerator;
@@ -19,7 +20,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Component
-
+@Service
 public class JWTUtil {
 
     private final String secretKey;
@@ -38,17 +39,19 @@ public class JWTUtil {
     public String generateToken(String userName, String role) {
 
         Map<String, Object> claims = new HashMap<>();
+        claims.put("role", role);
+        return createToken(claims,userName);
+
+
+    }
+    private String createToken(Map<String ,Object>claims, String subject){
         return Jwts.builder()
-                .claims()
-                .add(claims)
-                .add("role",role)
-                .subject(userName)
+                .claims(claims)
+                .subject(subject)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + 60 * 60 * 1000))
-                .and()
                 .signWith(getSecretKey())// we need a key to sign with
                 .compact();
-
 
     }
 
@@ -60,10 +63,7 @@ public class JWTUtil {
     public boolean isTokenValid(String token, String userName) {
 
         final String extractUserName = extractUserName(token);
-        if (extractUserName.equals(userName)) {
-            isTokenExpired(token);
-        }
-        return false;
+        return extractUserName.equals(userName) && !isTokenExpired(token);
     }
 
     private boolean isTokenExpired(String token) {
@@ -85,12 +85,11 @@ public class JWTUtil {
     }
 
     public  String extractRole(String token){
+
         return extractClaim(token,claims -> claims.get("role",String.class));
 }
-//    private <T> T extractUserName(String token, Function<Claims, T> claimResolver) {
-//        Claims claims = extractAllClaims(token);
-//        return claimResolver.apply(claims);
-//    }
+
+
 
     private Claims extractAllClaims(String token) {
         return Jwts.parser()

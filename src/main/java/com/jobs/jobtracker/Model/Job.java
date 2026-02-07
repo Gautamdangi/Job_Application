@@ -8,7 +8,6 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,23 +17,20 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @EntityListeners(AuditingEntityListener.class)
-@Table(name ="Jobs")
-public class Jobs {
+@Table(name ="jobs")
+public class Job {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-   private  String company;
+    private String company;
     private String jobTitle;
-    private  String Link;
+    private String applyLink;
     private String location;
 
-
-//    @Enumerated(EnumType.STRING)
-//    private Status status;
-
     private String notes;
+
 
     @Column(nullable = false)
     private Boolean isActive = true;
@@ -46,26 +42,16 @@ public class Jobs {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
-//    deadline to apply
+    //    deadline to apply
     private LocalDateTime deadline;
 
     private String salaryRange;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name ="recruiter_id",nullable = false)
+    @JoinColumn(name = "recruiter_id", nullable = false)
     private User recruiter;
 
-    @OneToMany(mappedBy = "jobs", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "job", cascade = CascadeType.ALL)
     private List<JobApplication> applications = new ArrayList<>();
 
-
-
-
-
-
-
-    //connect to user
-//    @ManyToOne
-//    @JoinColumn(name = "user_id")
-//    private User user;
 }

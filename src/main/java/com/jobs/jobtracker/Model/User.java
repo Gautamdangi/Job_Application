@@ -30,14 +30,17 @@ public class User {
 
     @Column(name = "user_email",nullable = false, unique = true)
     private String userEmail;
+    @Column(name= "password")
     private  String password;
 
+    @Column (name = "phoneNum")
     private String phoneNum;
 
+    @Column(name = "resume")
     private String resumePath;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(name="role",nullable = false)
     private Role role;
 
     @Column(nullable = false) //checking whether the user present or not using isActive flag for soft delete and preserve data integrity
@@ -45,17 +48,18 @@ public class User {
 
     // to handle cross-cutting(AOP) concerns  like auditing and  status
     @CreatedDate
-    @Column(nullable = false, updatable = false)
+    @Column(name="created_at",nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     @LastModifiedDate
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
 
 
 
    @OneToMany(mappedBy = "recruiter", cascade = CascadeType.ALL)
-    private List<Jobs> postedJobs = new ArrayList<>(0);
+    private List<Job> postedJobs = new ArrayList<>(0);
 
    @OneToMany(mappedBy = "applicant",cascade = CascadeType.ALL)
     private List<JobApplication> applications =new ArrayList<>();

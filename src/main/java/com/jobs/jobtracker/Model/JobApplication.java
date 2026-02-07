@@ -27,9 +27,11 @@ public class JobApplication {
     @JoinColumn (name= "applicant_id", nullable = false)
     private User applicant;
 
+
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "job_id",nullable = false)
-    private Jobs jobs;
+    private Job job;
 
     @Column(nullable = false)
     private String resumePath;
