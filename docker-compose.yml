@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+
+  mysql:
+    image: mysql:8
+    container_name: jobtracker-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: GautamD@5678
+      MYSQL_DATABASE: jobTrackingApplication
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  redis:
+    image: redis:7
+    container_name: jobtracker-redis
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: .
+    container_name: jobtracker-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/jobTrackingApplication
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: GautamD@5678
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+
+volumes:
+  mysql-data:
