@@ -1,6 +1,7 @@
 package com.jobs.jobtracker.exceptions;
 
-import com.jobs.jobtracker.DTO.ErrorResponse;
+import com.jobs.jobtracker.dto.ErrorResponse;
+import com.jobs.jobtracker.exceptions.*;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -16,10 +17,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<ErrorResponse> handleUserAlreadyExists(
-            UserAlreadyExistsException existsException,
+           UserAlreadyExistsException existsException,
             HttpServletRequest request
     ) {
-        log.error("User already exists : ", existsException.getMessage());
+        log.error("User already exists {}: ", existsException.getMessage());
         ErrorResponse error = new ErrorResponse(
                     HttpStatus.CONFLICT.value(),
                 existsException.getMessage(),
@@ -35,7 +36,7 @@ public class GlobalExceptionHandler {
                     InvalidCredentialsException invalidCr,
                 HttpServletRequest request1
     ){
-                log.error("Invalid Credentials : ", invalidCr.getMessage());
+                log.error("Invalid Credentials :{} ", invalidCr.getMessage());
                 ErrorResponse errorResponse = new ErrorResponse(
                         HttpStatus.UNAUTHORIZED.value(),
                         invalidCr.getMessage(),
@@ -60,12 +61,12 @@ public class GlobalExceptionHandler {
 
     }
 
-    @ExceptionHandler(ResourceNotFoundException.class)
+    @ExceptionHandler(value = ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(
             ResourceNotFoundException resourceNotFoundException,
             HttpServletRequest request
     ){
-        log.error("Resource not found ", resourceNotFoundException.getMessage());
+        log.error("Resource not found :{} ", resourceNotFoundException.getMessage());
         ErrorResponse errorResponse = new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
                 resourceNotFoundException.getMessage(),
@@ -79,7 +80,7 @@ public class GlobalExceptionHandler {
             UnauthorizedException exception,
             HttpServletRequest request
     ) {
-        log.error("User Not authorized to access this " , exception.getMessage());
+        log.error("User Not authorized to access this {}: " , exception.getMessage());
         ErrorResponse errorResponse = new ErrorResponse(
                 HttpStatus.UNAUTHORIZED.value(),
                 exception.getMessage(),
@@ -89,8 +90,48 @@ public class GlobalExceptionHandler {
 
     }
     // fileStorageException
+    @ExceptionHandler(FileSorageException.class)
+    public ResponseEntity<ErrorResponse> handleStorage(
+            FileSorageException fileException,
+            HttpServletRequest request
+    ){
+        log.error("Your file Size is above the specified size {}: ",fileException.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE.value(),
+                fileException.getMessage(),
+                request.getRequestURI()
+                );
+        return ResponseEntity.status(HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE).body(errorResponse);
+
+    }
     //AccountInactive
+    @ExceptionHandler(AccountInactiveException.class)
+    public  ResponseEntity<ErrorResponse> handleAccountInactive(
+            AccountInactiveException inactiveException,
+            HttpServletRequest request
+    ){
+        log.error("Wrong Credentials {}:", inactiveException.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.NOT_FOUND.value(),
+                inactiveException.getMessage(),
+                request.getRequestURI()
+        );
+        return  ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
     //AlreadyJobApplied
+    @ExceptionHandler(AlreadyJobAppliedException.class)
+    public  ResponseEntity<ErrorResponse> handleAlreadyApplied(
+          AlreadyJobAppliedException alreadyAppliedException,
+            HttpServletRequest request
+    ){
+        log.error("Already applied for thi job{} :", alreadyAppliedException.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                alreadyAppliedException.getMessage(),
+                request.getRequestURI()
+        );
+        return  ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
 
 
             @ExceptionHandler(EmailException.class)
